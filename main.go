@@ -8,5 +8,6 @@ import (
 
 func main() {
     fmt.Println(day13.Part1("./day13/input.txt"))
+    fmt.Println(day13.Part2("./day13/input.txt"))
     return
 }

@@ -4,9 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
+
+type List struct {
+    elems []Elem
+}
+
+type Value = int
 
 type Elem struct {
     list *List
@@ -23,11 +30,23 @@ func (e Elem) String() string {
     }
 }
 
-type List struct {
-    elems []Elem
+// Create type that supports for sort interface
+type ElemList []Elem
+
+func (x ElemList) Len() int {
+    return len(x)
 }
 
-type Value = int
+func (x ElemList) Less(i,j int) bool {
+    return cmp(x[i], x[j]) == 1
+}
+
+func (x ElemList) Swap(i,j int) {
+    tmp := x[i]
+    x[i] = x[j]
+    x[j] = tmp
+}
+
 
 const (
     NDet int = iota
@@ -43,6 +62,21 @@ func Part1(input_file string) string {
         e2 := r[i*2+1]
         c := cmp(e1, e2)
         if c == Correct { answer += i + 1 }
+    }
+    return fmt.Sprint(answer)
+}
+
+func Part2(input_file string) string {
+    e1 := Elem{&List{[]Elem{{&List{[]Elem{{nil, 2}}}, 0}}}, 0}
+    e2 := Elem{&List{[]Elem{{&List{[]Elem{{nil, 6}}}, 0}}}, 0}
+    r := ElemList(parse(input_file))
+    r = append(r, e1, e2)
+    sort.Sort(r)
+    answer := 1
+    for i := range r {
+        if r[i] == e1 || r[i] == e2 {
+            answer *= i + 1
+        }
     }
     return fmt.Sprint(answer)
 }
