@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/Jellycious/aoc2022/day12"
+	"github.com/Jellycious/aoc2022/day13"
 )
 
 func main() {
-    fmt.Println(day12.Part1("./day12/input.txt"))
+    fmt.Println(day13.Part1("./day13/input.txt"))
     return
 }

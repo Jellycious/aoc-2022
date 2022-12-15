@@ -30,62 +30,86 @@ func (g grid) String() string {
     return s
 }
 
-func toUpper(b byte) byte {
-    return b - 32
+func findChars(g *grid, c byte) []pos {
+    posList := make([]pos, 0)
+    for y := range *g {
+        for x := range (*g)[0] {
+            if (*g)[y][x] == c {
+                posList = append(posList, pos{x,y})
+            }
+        }
+    }
+    return posList
 }
 
-// CORRECT ANSWER: 462
+func min(a,b int) int {
+    if a > b {return b}
+    return a
+}
+
 func Part1(input_file string) string {
     g := parse(input_file)
-    start := pos{0,0}
+    poss := findChars(&g, 'S')
 
-    // Breadth-First Search
-    explored := make(map[pos]bool, 0)
-    explored[start] = true
+    bfs := BFS(g, poss[0])
+
+    // Do print magic
+    return fmt.Sprint(bfs)
+}
+
+func Part2(input_file string) string {
+    g := parse(input_file)
+    ss := findChars(&g, 'S')
+    ss = append(ss, findChars(&g, 'a')...)
+    shortest_path := 9999999
+    for _,p := range ss {
+        nsp := BFS(g, p)
+        if nsp > -1 {
+            shortest_path = min(shortest_path, BFS(g, p))
+        }
+    }
+    return fmt.Sprint(shortest_path)
+}
+
+func BFS(g grid, start pos) int {
+    // Finds shortest path through Breadth-first Search.
+    // Returns length of the path
+    visited := make(map[pos]bool, 0)
+    visited[start] = true
     parents := make(map[pos]*pos, 0)
 
     to_visit := linkedlistqueue.New()
     to_visit.Enqueue(start)
 
-    var goal *pos
-
     for {
         cr, ok := to_visit.Dequeue()
         if !ok { // Exhausted search
-            panic("Goal not found...")
+            return -1
         }
 
         c := cr.(pos)
         if g[c.y][c.x] == 'E' { // Reached Goal
-            goal = &c
-            break
+            // Back trace
+            i := 0
+            p := &c
+            for p != nil {
+                p = parents[*p]
+                i++
+            }
+            return i-1
         }
 
         // Visit neighbours of current node
         for _, n := range neighbours(&g, c) {
-            _, is_explored := explored[n]
-            if !is_explored {
+            _, present := visited[n]
+            if !present {
                 // New neighbour
                 parents[n] = &c
                 to_visit.Enqueue(n)
-                explored[n] = true
+                visited[n] = true
             }
         }
-        fmt.Println(to_visit.Values())
     }
-
-    // Back-trace path to find 
-    i := 0
-    for goal != nil {
-        g[goal.y][goal.x] = toUpper(g[goal.y][goal.x])
-        fmt.Println(goal)
-        goal = parents[*goal]
-        i++
-    }
-    fmt.Println(g)
-
-    // Do print magic
-    return fmt.Sprint(i-1)
 }
 
 
