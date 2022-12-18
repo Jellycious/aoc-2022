@@ -1,0 +1,18 @@
+
+func computeUpperBound(time int, closed []string, graph *map[string]Valve) int {
+    valve_rates := make([]int, len(closed))
+    for k := range closed {
+        valve_rates[k] = (*graph)[closed[k]].rate
+    }
+
+    sorted := sort.IntSlice(valve_rates)
+    sort.Sort(sorted)
+    total := 0
+    for _, v := range sorted {
+        time = time - 2 // time to reach, time to open
+        if time < 0 { break; }
+        total += v * time
+    }
+
+    return total
+}
