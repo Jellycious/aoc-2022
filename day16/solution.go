@@ -47,10 +47,6 @@ func Part1(inputFile string) string {
     return fmt.Sprint(res.totalFlow())
 }
 
-func Part2(inputFile string) string {
-    // Lord save me 
-    return ""
-}
 
 func createTravelMap(graph map[string]Valve) map[string]map[string]int {
     // Returns the lenghts of the shortest paths from nodes
