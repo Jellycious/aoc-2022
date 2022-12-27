@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-    fmt.Println(day17.Part1("./day17/example.txt"))
+    fmt.Println(day17.Part1("./day17/input.txt"))
     //fmt.Println(day17.Part1("./day17/input.txt"))
     return
 }

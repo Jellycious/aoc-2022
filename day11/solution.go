@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Jellycious/aoc2022/parsing"
+	"github.com/Jellycious/aoc2022/utils"
 )
 
 const (
@@ -146,7 +146,7 @@ func simulateRound2(monkeys *[]Monkey, inspections *map[int]int) {
 func parse(input_file string) []Monkey {
     f, _ := os.Open(input_file)
     scanner := bufio.NewScanner(f)
-    scanner.Split(parsing.ScanSubstr([]byte("\n\n")))
+    scanner.Split(utils.ScanSubstr([]byte("\n\n")))
 
     monkeys := make([]Monkey, 0)
 
