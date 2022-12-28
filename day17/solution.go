@@ -1,9 +1,11 @@
 package day17
 
 import (
-    "github.com/Jellycious/aoc2022/utils"
 	"fmt"
 	"os"
+	"reflect"
+
+	"github.com/Jellycious/aoc2022/utils"
 )
 
 type Pos struct {
@@ -65,20 +67,115 @@ func Part1(input_file string) string {
 
     time, height := 0, -1
     for i := 0; i < 2022; i++ {
-        time, height = dropRock(&solidified, time, height, rocks[i % len(rocks)], &jet)
+        time, height, _ = dropRock(&solidified, time, height, rocks[i % len(rocks)], &jet)
     }
 
     return fmt.Sprint(height+1)
 }
 
-func dropRock(solidified *[]Rock, time int, height int, r Rock, jet *Jet) (int, int) {
+// State
+type State struct {
+    jetI int
+    rockI int
+    /* Offset of spawn position of rock and final position
+       Is somewhat of an approximate state, so might not work for every input */
+    prevOffsets []Pos
+    /* Misc Data */
+    i int // rock number
+    height int // height after rock had been dropped
+}
+
+func(s State) peq(other State) bool {
+    // Partial equality for states (excludes Misc Data in State)
+    if s.jetI != other.jetI || s.rockI != other.rockI { return false }
+    if reflect.DeepEqual(s.prevOffsets, other.prevOffsets) {
+        return true
+    }
+    return false
+}
+
+func Part2(input_file string) string {
+    /* Optimization ideas: Cycle Detection*/
+    rocks := getRocklist()
+    jet := parse(input_file)
+    solidified := make([]Rock, 0)
+    prevStates := make([]State, 0)
+
+    PREV_SIZE := 30 /* Increase this value for more accurate results */
+    prevOffsets := make([]Pos, PREV_SIZE + 1) // Keep track of previous 500 offsets
+
+    i, time, height := 0, 0, -1
+
+    var cycleStart, cycleRepeat State
+
+    for {
+        oldTime := time
+
+        var offset Pos
+        time, height, offset = dropRock(&solidified, time, height, rocks[i % len(rocks)], &jet)
+
+        // Copy new offset into prevOffsets and shift list
+        prevOffsets[PREV_SIZE] = offset
+        offsets := make([]Pos, PREV_SIZE)
+        copy(prevOffsets[:PREV_SIZE], prevOffsets[1:PREV_SIZE+1])
+        copy(offsets, prevOffsets[:PREV_SIZE])
+
+        newState := State {
+            oldTime % len(jet),
+            i % len(rocks),
+            offsets,
+            i,
+            height,
+        }
+
+        // Cycle detection
+        s := contains(&prevStates, newState)
+        if s != nil {
+            cycleStart = *s
+            cycleRepeat = newState
+            i++
+            break
+        }
+
+        // add new state to previous states
+        prevStates = append(prevStates, newState)
+        i++
+    }
+
+    // Compute the height after 1000000000000 rocks using the detected cycle
+    cycleRocks := cycleRepeat.i - cycleStart.i // Rocks that get dropped in a single cycle
+    cycleHeight := cycleRepeat.height - cycleStart.height // The height that gets added in a single cycle
+
+    rocksRemaining := 1000000000000 - cycleRepeat.i // Rocks that should still be dropped after the cycle has been detected
+    cyclesRemaining := rocksRemaining / cycleRocks // how many cycles can we fit in the remaining rocks
+    lastRocks := rocksRemaining % cycleRocks // last few computations that are required
+
+    additionalHeight := cycleHeight * cyclesRemaining // Height accumulated in the remaining cycles
+
+    // Simulate last few rocks
+    for j := 0; j < lastRocks - 1; j++ {
+        time, height, _ = dropRock(&solidified, time, height, rocks[i % len(rocks)], &jet)
+        i++
+    }
+
+    return fmt.Sprint(height+additionalHeight+1)
+}
+
+func contains(states *[]State, state State) *State {
+    for _, s := range *states {
+        if state.peq(s) { return &s }
+    }
+    return nil
+}
+
+func dropRock(solidified *[]Rock, time int, height int, r Rock, jet *Jet) (int, int, Pos) {
     /*  Drop a rock until it solidifies
     *   @param solidified: Positions of rocks that have solidified
     *   @param height: Y coordinate of highest piece of rock
     *   @param time: time at start
     *   @param r: Rock to drop
     *   @param jet: the Jetstream that moves rocks around
-    *   @returns (newTime, newHeight)
+    *   @returns (newTime, newHeight, offset)
     */
 
     rock := r.move(Pos{2, height+4}) // offset rocks to start position
@@ -90,9 +187,10 @@ func dropRock(solidified *[]Rock, time int, height int, r Rock, jet *Jet) (int, 
     var newRock, tmpRock Rock
     newRock = rock
 
+    var endPos, startPos Pos
+    startPos = rock.pos
+
     for !done {
-        //fmt.Printf("t: %v, h: %v\n", time, curHeight)
-        //fmt.Println(newRock)
         tmpRock = newRock
         c := (*jet)[time % len(*jet)]
 
@@ -106,7 +204,6 @@ func dropRock(solidified *[]Rock, time int, height int, r Rock, jet *Jet) (int, 
         } else if collision(solidified, newRock) {
             newRock = tmpRock
         }
-        //fmt.Printf("After jet push %c: %v\n", c, newRock)
 
         // Move rock down
         tmpRock = newRock // store state
@@ -116,26 +213,30 @@ func dropRock(solidified *[]Rock, time int, height int, r Rock, jet *Jet) (int, 
         if min.y < 0 {
             // Rock has encountered floor
             *solidified = append(*solidified, tmpRock)
+            endPos = tmpRock.pos
             done = true
             curHeight+=1
         } else if collision(solidified, newRock) {
             *solidified = append(*solidified, tmpRock)
+            endPos = tmpRock.pos
             done = true
             curHeight+=1
         }
 
-        //fmt.Printf("After gravity: %v\n", newRock)
         time++
         curHeight--
     }
 
-    return time, utils.Max(height, curHeight)
+    return time, utils.Max(height, curHeight), endPos.sub(startPos)
 }
 
 func collision(solidified *[]Rock, r Rock) bool {
-    for _, sr := range *solidified {
-        if r.collides(sr) { return true }
+    BOUND := 20 // Bound (**Increase this value for more accurate results */
+    for i := len(*solidified) - 1; i >= utils.Max(0, (len(*solidified) - BOUND)); i-- {
+        if (*solidified)[i].collides(r) { return true }
+
     }
+
     return false
 }
 
