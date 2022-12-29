@@ -39,20 +39,20 @@ func Part2(input_file string) string {
     crt := ""
     for _, instr := range instrs {
         cycle++ // Begin new cycle
-        fmt.Printf("cycle: %d x: %d\n", cycle, x)
+        //fmt.Printf("cycle: %d x: %d\n", cycle, x)
         crt += draw(x, cycle)
-        fmt.Println(crt)
-        fmt.Println()
+        //fmt.Println(crt)
+        //fmt.Println()
 
         if instr.is_noop {
             continue
         }
 
         cycle++
-        fmt.Printf("cycle: %d x: %d\n", cycle, x)
+        //fmt.Printf("cycle: %d x: %d\n", cycle, x)
         crt += draw(x, cycle)
-        fmt.Println(crt)
-        fmt.Println()
+        //fmt.Println(crt)
+        //fmt.Println()
         x += instr.val // update register
     }
     return crt

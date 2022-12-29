@@ -25,7 +25,7 @@ func Part1(input_file string) string {
             if is_visible {visible_count++}
         }
     }
-    return fmt.Sprintln(visible_count)
+    return fmt.Sprint(visible_count)
 }
 
 func Part2(input_file string) string {
@@ -44,7 +44,7 @@ func Part2(input_file string) string {
             max_visible_score = max(max_visible_score, left * right * top * bottom)
         }
     }
-    return fmt.Sprintln(max_visible_score)
+    return fmt.Sprint(max_visible_score)
 }
 
 func ReverseSlice[T comparable](s []T) {
